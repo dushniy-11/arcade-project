@@ -7,7 +7,7 @@ SCREEN_HEIGHT = 500
 SCREEN_TITLE = "DиноZаврик"
 PLAYER_SPEED = 10
 JUMP_SPEED = 300
-PLAYER_SCALE = 0.3
+PLAYER_SCALE = 0.7
 COLLISION_SCALE = 0.4
 GRAVITY = 9
 CAMERA_LERP = 0.15
@@ -25,13 +25,18 @@ class Pterodactyle(arcade.Sprite):
         self.center_x = x
         self.center_y = y
 
+
 class Dyno(arcade.Sprite):
     def __init__(self):
-        super().__init__("dyno.png", scale=PLAYER_SCALE)
+        super().__init__("dyno_1.png", scale=PLAYER_SCALE)
         self.center_x = 0
         self.center_y = 30
         self.speed_x = PLAYER_SPEED
         self.speed_y = 0
+        self.moving_textures = [arcade.load_texture("dyno_1.png"), arcade.load_texture("dyno_2.png")]
+        self.texture_update_number = 0
+        self.time_since_last_face_update = 0
+        self.update_interval = 0.2
 
     def update(self, delta_time, keys):
         self.change_x = self.speed_x
@@ -39,12 +44,27 @@ class Dyno(arcade.Sprite):
         if self.speed_x < 30:
             self.speed_x += 0.003
 
+    def update_texture(self, delta_time: float = 1 / 60, update_texture_to_jump_held=False):
+        if update_texture_to_jump_held:
+            self.texture = arcade.load_texture("dyno.png")
+        else:
+            self.time_since_last_face_update += delta_time
+            if self.time_since_last_face_update >= self.update_interval:
+                self.time_since_last_face_update = 0
+                self.texture = self.moving_textures[self.texture_update_number]
+                if self.texture_update_number == 1:
+                    self.texture_update_number = 0
+                elif self.texture_update_number == 0:
+                    self.texture_update_number = 1
+
+
 
 class MyGame(arcade.Window):
     def __init__(self):
         super().__init__(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
         arcade.set_background_color(arcade.color.WHITE)
         self.world_camera = arcade.camera.Camera2D()
+        self.in_update_player_texture = True
         self.end_game = False
 
     def setup(self):
@@ -103,6 +123,7 @@ class MyGame(arcade.Window):
         for element in self.collisions_list:
             if arcade.check_for_collision(self.player, element):
                 self.end_game = True
+                self.player.texture = arcade.load_texture("dyno_end.png")
             if element.center_x < self.player.center_x - (SCREEN_WIDTH // 2 + SCREEN_WIDTH // 2):
                 element.remove_from_sprite_lists()
 
@@ -111,10 +132,22 @@ class MyGame(arcade.Window):
             if element.center_x < self.player.center_x - (SCREEN_WIDTH // 2 + SCREEN_WIDTH // 1.5):
                 element.center_x = max_x + 1150
 
+            #if arcade.check_for_collision(self.player, element):
+                #self.in_update_player_texture = True
+
+        if self.in_update_player_texture:
+            self.player.update_texture()
+
+        if self.player.center_y == 223.25:
+            self.in_update_player_texture = True
+
+
     def on_key_press(self, key, modifiers):
         if key == arcade.key.W:
             if self.engine.can_jump():
                 self.player.change_y = JUMP_SPEED
+            self.player.update_texture(update_texture_to_jump_held=True)
+            self.in_update_player_texture = False
 
     def make_cactus(self):
         if len(self.collisions_list) < 1:
@@ -126,9 +159,9 @@ class MyGame(arcade.Window):
 
     def make_pterodactyl(self):
         if len(self.collisions_list) < 1:
-            if random.random() < 0.4:
+            if random.random() < 1:
                 x = self.player.center_x + (100 * random.randint(4, 8))
-                y = self.player.center_y + (40 * random.randint(1, 3))
+                y = self.player.center_y + (15 * random.randint(1, 3))
                 pterodactyle = Pterodactyle(x, y)
                 self.collisions_list.append(pterodactyle)
 
