@@ -16,7 +16,7 @@ class Dyno(arcade.Sprite):
     def update(self, delta_time, keys):
         self.change_x = self.speed_x
         self.change_y = self.speed_y
-        if self.speed_x < 40:
+        if self.speed_x < 30:
             self.speed_x += 0.003
 
     def update_texture(self, delta_time: float = 1 / 60, update_texture_to_jump_held=False):
@@ -30,4 +30,5 @@ class Dyno(arcade.Sprite):
                 if self.texture_update_number == 1:
                     self.texture_update_number = 0
                 elif self.texture_update_number == 0:
+
                     self.texture_update_number = 1
